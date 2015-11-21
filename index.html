@@ -1,4 +1,124 @@
 <!DOCTYPE html>
+<script type="text/javascript" src="http://furyu.tea-nifty.com/script/gae_xhrequest.js"></script>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script>
+  var threegu;
+  function checkAll(bool, name) {
+    console.log(name);
+    var boxes = document.getElementsByName(name);
+    for(var i = 0; i < boxes.length; i++) {
+      boxes[i].checked = bool;
+    }
+    drawChart();
+  }
+
+  function isCheckedWG(wgname) {
+    var visible = [];
+    var tsgname;
+    for(var j = 0; j < 4; j++) {
+      switch (j) {
+        case 0:  tsgname = "sa"; break;
+        case 1:  tsgname = "ct"; break;
+        case 2:  tsgname = "ran"; break;
+        case 3:  tsgname = "geran";
+      }
+      var boxes = document.getElementsByName(tsgname);
+      for(var i = 0; i < boxes.length; i++) {
+        if(boxes[i].checked)
+          visible.push(boxes[i].id);
+      }
+    }
+
+    if(visible.indexOf(wgname) != -1)
+      return true;
+    else
+      return false;
+
+  }
+
+  function createChartInfo() {
+    var parser = new DOMParser();
+    var dom = parser.parseFromString(threegu, "text/html");
+
+
+    var chartInfo = new Array();
+
+    for (var n = 0; n < 2; n++) {
+      var meetings;
+      if (n == 0) meetings = dom.getElementsByClassName("rgRow");
+      else        meetings = dom.getElementsByClassName("rgAltRow");
+
+      for (var i = 0; i < meetings.length; i++) {
+        var meetinginfo = meetings[i].getElementsByTagName("td");
+        var wg    = meetinginfo[3].innerHTML.replace(/\s+/g, "").replace(/<.+?>/g, "").split("#");
+        var wgname = wg[0].replace("3GPP", "").replace("new", "");
+        if(isCheckedWG(wgname)) {
+          var start = meetinginfo[1].innerHTML.replace(/\s+/g, "").replace(/<.+?>/g, "");
+          var end   = meetinginfo[2].innerHTML.replace(/\s+/g, "").replace(/<.+?>/g, "");
+          var label   = "#" + wg[1] +
+                        '@' + meetinginfo[5].innerHTML +
+                        ' from:' + start +
+                        ' to:'   + end;
+
+          var s = start.split("-");
+          var e = end.split("-");
+
+          chartInfo.push([
+            [ wgname,
+              label,
+              new Date(s[0], s[1] - 1, s[2]),
+              new Date(e[0], e[1] - 1, e[2])
+            ]
+          ]);
+        }
+      }
+    }
+    return chartInfo;
+  }
+
+  function drawChart() {
+    var chartInfo = createChartInfo();
+
+    var container = document.getElementById('newlines');
+    container.innerHTML = "";
+    var chart = new google.visualization.Timeline(container);
+    var dataTable = new google.visualization.DataTable();
+
+    dataTable.addColumn({ type: 'string', id: 'WG name' });
+    dataTable.addColumn({ type: 'string', id: 'meetingNum' });
+    dataTable.addColumn({ type: 'date', id: 'Start' });
+    dataTable.addColumn({ type: 'date', id: 'End' });
+
+    for (var i = 0; i < chartInfo.length; i++) {
+      dataTable.addRows(chartInfo[i]);
+    }
+
+    var options = {
+      timeline: { colorByRowLabel: true }
+    };
+
+    chart.draw(dataTable, options);
+
+  }
+
+
+  function fetch3GU() {
+    GAE_xmlhttpRequest({
+      method : 'GET'
+     ,url    : 'https://portal.3gpp.org/'
+	   ,onload : function(response){
+		             threegu = response.responseText;
+		             drawChart();
+		           }
+    });
+  }
+
+  google.load("visualization", "1", {packages:["timeline"]});
+  window.onload = fetch3GU;
+
+</script>
+
 <html>
 
   <head>
@@ -29,6 +149,52 @@
       <section id="main_content" class="inner">
         <h3>
 <a id="wgs" class="anchor" href="#wgs" aria-hidden="true"><span class="octicon octicon-link"></span></a>WGs</h3>
+  <table>
+      <tr>
+        <th><input type="button"  value="Check all"   onClick="checkAll(true, 'sa')"></th>
+        <th><input type="button"  value="Uncheck all" onClick="checkAll(false, 'sa')"></th>
+        <th align="left"><input type="checkbox" name="sa" id="SA"  value="1" checked="checked" onclick="drawChart()">SA</th>
+        <th align="left"><input type="checkbox" name="sa" id="SA1" value="1" checked="checked" onclick="drawChart()">SA1</th>
+        <th align="left"><input type="checkbox" name="sa" id="SA2" value="1" checked="checked" onclick="drawChart()">SA2</th>
+        <th align="left"><input type="checkbox" name="sa" id="SA3" value="1"                   onclick="drawChart()">SA3</th>
+        <th align="left"><input type="checkbox" name="sa" id="SA4" value="1"                   onclick="drawChart()">SA4</th>
+        <th align="left"><input type="checkbox" name="sa" id="SA5" value="1"                   onclick="drawChart()">SA5</th>
+        <th align="left"><input type="checkbox" name="sa" id="SA6" value="1" checked="checked" onclick="drawChart()">SA6</th>
+      </tr>
+  <!-- </table>
+  <table> -->
+      <tr>
+        <th><input type="button"  value="Check all"   onClick="checkAll(true,  'ct')"></th>
+        <th><input type="button"  value="Uncheck all" onClick="checkAll(false, 'ct')"></th>
+        <th align="left"><input type="checkbox" name="ct" id="CT"  value="1" checked="checked" onclick="drawChart()">CT</th>
+        <th align="left"><input type="checkbox" name="ct" id="CT1" value="1" checked="checked" onclick="drawChart()">CT1</th>
+        <th align="left"><input type="checkbox" name="ct" id="CT3" value="1" checked="checked" onclick="drawChart()">CT3</th>
+        <th align="left"><input type="checkbox" name="ct" id="CT4" value="1"                   onclick="drawChart()">CT4</th>
+        <th align="left"><input type="checkbox" name="ct" id="CT6" value="1"                   onclick="drawChart()">CT6</th>
+      </tr>
+  <!-- </table>
+  <table> -->
+      <tr>
+        <th><input type="button"  value="Check all"   onClick="checkAll(true,  'ran')"></th>
+        <th><input type="button"  value="Uncheck all" onClick="checkAll(false, 'ran')"></th>
+        <th align="left"><input type="checkbox" name="ran" id="RAN"  value="1" onclick="drawChart()">RAN</th>
+        <th align="left"><input type="checkbox" name="ran" id="RAN1" value="1" onclick="drawChart()">RAN1</th>
+        <th align="left"><input type="checkbox" name="ran" id="RAN2" value="1" onclick="drawChart()">RAN2</th>
+        <th align="left"><input type="checkbox" name="ran" id="RAN3" value="1" onclick="drawChart()">RAN3</th>
+        <th align="left"><input type="checkbox" name="ran" id="RAN4" value="1" onclick="drawChart()">RAN4</th>
+        <th align="left"><input type="checkbox" name="ran" id="RAN5" value="1" onclick="drawChart()">RAN5</th>
+      </tr>
+  <!-- </table>
+  <table> -->
+      <tr>
+        <th><input type="button"  value="Check all"   onClick="checkAll(true,  'geran')"></th>
+        <th><input type="button"  value="Uncheck all" onClick="checkAll(false, 'geran')"></th>
+        <th align="left"><input type="checkbox" name="geran" id="GERAN"  value="1" onclick="drawChart()">GERAN</th>
+        <th align="left"><input type="checkbox" name="geran" id="GERAN1" value="1" onclick="drawChart()">GERAN1</th>
+        <th align="left"><input type="checkbox" name="geran" id="GERAN2" value="1" onclick="drawChart()">GERAN2</th>
+        <th align="left"><input type="checkbox" name="geran" id="GERAN3" value="1" onclick="drawChart()">GERAN3</th>
+      </tr>
+  </table>
 
 <h3>
 <a id="meetings" class="anchor" href="#meetings" aria-hidden="true"><span class="octicon octicon-link"></span></a>Meetings</h3>
